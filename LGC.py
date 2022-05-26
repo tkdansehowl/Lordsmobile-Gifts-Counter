@@ -17,6 +17,8 @@ nickname_list = []
 df = pd.DataFrame(columns=rarities)
 error_count = 0
 filename = time.strftime('%y%m%d-%H%M') # 시작 시간으로 파일 이름 저장
+cycle = 0
+i = 0
 
 # LDPlayer 창 활성화하기
 win = pygetwindow.getWindowsWithTitle('LDPlayer')[0]
@@ -34,10 +36,10 @@ gift_gray = cv2.imread('gift.png', cv2.IMREAD_GRAYSCALE)
 gift_gray = cv2.threshold(gift_gray, 127, 255, cv2.THRESH_BINARY_INV)[1]
 gift_text = pytesseract.image_to_string(gift_gray, lang='eng', config=tesseract_config)
 gift_text = int(gift_text[6:len(gift_text)])
-print('Gifts:', gift_text)
+print('전체 상자 수:', gift_text)
 
-for i in range(gift_text + error_count):
-
+while gift_text + error_count != 0:
+    i += 1
     # 활성화 창 클립보드로 스샷 찍고 가공 후 저장
     pyautogui.hotkey('alt', 'printscreen')
     im1 = ImageGrab.grabclipboard()
@@ -53,7 +55,7 @@ for i in range(gift_text + error_count):
     nickname_gray = cv2.threshold(nickname_gray, 127, 255, cv2.THRESH_BINARY_INV)[1]
     nickname_text = pytesseract.image_to_string(nickname_gray, lang='eng', config=tesseract_config).strip('\n')
 
-    print(str(i + 1) + '번 째:', nickname_text, '/', rarity_text)
+    print(str(i) + '번 째:', nickname_text, '/', rarity_text)
     # 데이터프레임에 넣기
     if nickname_text in nickname_list:
         pass
@@ -77,11 +79,15 @@ for i in range(gift_text + error_count):
         time.sleep(0.7)
         pyautogui.click()
         time.sleep(1)
+        gift_text -= 1
+        cycle += 1
 
     else:
         error_count += 1
-        print('에러 발생 횟수:', error_count)
-        
+        cycle += 1
+
+print('전체 실행 횟수:', cycle, '\n' + '에러 발생 횟수:', error_count )
+
 # 데이터프레임 가공하기 (총 상자 수, 총 포인트)
 Total_gifts = (df['Common'].sum(), df['Uncommon'].sum(), df['Rare'].sum(), df['Epic'].sum(), df['Legendary'].sum())
 df3 = pd.DataFrame(index=['Total'], columns=rarities, data=[Total_gifts])
