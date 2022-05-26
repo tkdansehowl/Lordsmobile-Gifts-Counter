@@ -15,6 +15,8 @@ tesseract_config = '-c tessedit_char_whitelist=" 0123456789ABCDEFGHIJKLMNOPQRSTU
 rarities = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary']
 nickname_list = []
 df = pd.DataFrame(columns=rarities)
+error_count = 0
+filename = time.strftime('%y%m%d-%H%M') # 시작 시간으로 파일 이름 저장
 
 # LDPlayer 창 활성화하기
 win = pygetwindow.getWindowsWithTitle('LDPlayer')[0]
@@ -26,7 +28,6 @@ pyautogui.moveTo(fore.left, fore.top)
 pyautogui.move(830, 260)
 
 # 전체 상자 수 확인
-
 pyautogui.hotkey('alt', 'printscreen')
 gift = ImageGrab.grabclipboard().crop((700, 200, 787, 222)).save('gift.png', 'png')
 gift_gray = cv2.imread('gift.png', cv2.IMREAD_GRAYSCALE)
@@ -35,8 +36,8 @@ gift_text = pytesseract.image_to_string(gift_gray, lang='eng', config=tesseract_
 gift_text = int(gift_text[6:len(gift_text)])
 print('Gifts:', gift_text)
 
-for i in range(gift_text):
-    print(i, '번 째')
+for i in range(gift_text + error_count):
+
     # 활성화 창 클립보드로 스샷 찍고 가공 후 저장
     pyautogui.hotkey('alt', 'printscreen')
     im1 = ImageGrab.grabclipboard()
@@ -52,6 +53,8 @@ for i in range(gift_text):
     nickname_gray = cv2.threshold(nickname_gray, 127, 255, cv2.THRESH_BINARY_INV)[1]
     nickname_text = pytesseract.image_to_string(nickname_gray, lang='eng', config=tesseract_config).strip('\n')
 
+    print(str(i + 1) + '번 째:', nickname_text, '/', rarity_text)
+    # 데이터프레임에 넣기
     if nickname_text in nickname_list:
         pass
     else:
@@ -76,8 +79,14 @@ for i in range(gift_text):
         time.sleep(1)
 
     else:
-        # df.to_excel('test(error).xlsx')
-        # print('ERROR', rarity_text, nickname_text, end='')
-        pass
-filename = time.strftime(%Y-%m-%d %H:%M)
+        error_count += 1
+        print('에러 발생 횟수:', error_count)
+        
+# 데이터프레임 가공하기 (총 상자 수, 총 포인트)
+Total_gifts = (df['Common'].sum(), df['Uncommon'].sum(), df['Rare'].sum(), df['Epic'].sum(), df['Legendary'].sum())
+df3 = pd.DataFrame(index=['Total'], columns=rarities, data=[Total_gifts])
+df = pd.concat([df, df3])
+df['Points'] = df['Common']*1 + df['Uncommon']*5 + df['Rare']*15 + df['Epic']*30 + df['Legendary']*50
+
+# 엑셀로 저장하기
 df.to_excel(filename+'.xlsx')
