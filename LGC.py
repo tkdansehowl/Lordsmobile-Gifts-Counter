@@ -17,8 +17,8 @@ nickname_list = []
 df = pd.DataFrame(columns=rarities)
 error_count = 0
 filename = time.strftime('%y%m%d-%H%M') # 시작 시간으로 파일 이름 저장
-cycle = 0
 i = 0
+tmpname = 1
 
 # LDPlayer 창 활성화하기
 win = pygetwindow.getWindowsWithTitle('LDPlayer')[0]
@@ -31,7 +31,7 @@ pyautogui.move(830, 260)
 
 # 전체 상자 수 확인
 pyautogui.hotkey('alt', 'printscreen')
-gift = ImageGrab.grabclipboard().crop((700, 200, 787, 222)).save('gift.png', 'png')
+ImageGrab.grabclipboard().crop((700, 200, 787, 222)).save('gift.png', 'png')
 gift_gray = cv2.imread('gift.png', cv2.IMREAD_GRAYSCALE)
 gift_gray = cv2.threshold(gift_gray, 127, 255, cv2.THRESH_BINARY_INV)[1]
 gift_text = pytesseract.image_to_string(gift_gray, lang='eng', config=tesseract_config)
@@ -43,8 +43,9 @@ while gift_text + error_count != 0:
     # 활성화 창 클립보드로 스샷 찍고 가공 후 저장
     pyautogui.hotkey('alt', 'printscreen')
     im1 = ImageGrab.grabclipboard()
-    rarity = im1.crop((492, 300, 900, 330)).save('rarity.png', 'png')
-    nickname = im1.crop((640, 330, 900, 360)).save('nickname.png', 'png')
+    im1.crop((480, 300, 1130, 400)).save(('./data/' + str(tmpname) + '.png'), 'png')
+    im1.crop((492, 300, 900, 330)).save('rarity.png', 'png')
+    im1.crop((640, 330, 900, 360)).save('nickname.png', 'png')
 
     # 전처리 & OCR
     rarity_gray = cv2.imread('rarity.png', cv2.IMREAD_GRAYSCALE)
@@ -56,6 +57,7 @@ while gift_text + error_count != 0:
     nickname_text = pytesseract.image_to_string(nickname_gray, lang='eng', config=tesseract_config).strip('\n')
 
     print(str(i) + '번 째:', nickname_text, '/', rarity_text)
+
     # 데이터프레임에 넣기
     if nickname_text in nickname_list:
         pass
@@ -76,17 +78,19 @@ while gift_text + error_count != 0:
         else:
             df.loc[nickname_text, 'Legendary'] += 1
         pyautogui.click()
-        time.sleep(0.7)
+        time.sleep(1)
         pyautogui.click()
         time.sleep(1)
-        gift_text -= 1
-        cycle += 1
-
+        tmpname += 1
+        if error_count > 0:
+            error_count -= 1
+        else:
+            gift_text -= 1
     else:
         error_count += 1
-        cycle += 1
+        time.sleep(2)
 
-print('전체 실행 횟수:', cycle, '\n' + '에러 발생 횟수:', error_count )
+print('전체 실행 횟수:', i )
 
 # 데이터프레임 가공하기 (총 상자 수, 총 포인트)
 Total_gifts = (df['Common'].sum(), df['Uncommon'].sum(), df['Rare'].sum(), df['Epic'].sum(), df['Legendary'].sum())
