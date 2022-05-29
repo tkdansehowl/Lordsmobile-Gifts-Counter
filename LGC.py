@@ -5,6 +5,7 @@ import cv2
 import pytesseract
 import pandas as pd
 import time
+import sys
 from PIL import ImageGrab
 
 # https://github.com/PowercoderJr/lords-gifts-counter/blob/master/analyze.py
@@ -13,12 +14,14 @@ from PIL import ImageGrab
 # 변수 선언
 tesseract_config = '-c tessedit_char_whitelist=" 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" --oem 3 --psm 7'
 rarities = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary']
+rarity_text = ''
+nickname_text = ''
 nickname_list = []
+
 df = pd.DataFrame(columns=rarities)
 error_count = 0
 filename = time.strftime('%y%m%d-%H%M') # 시작 시간으로 파일 이름 저장
 i = 0
-tmpname = 1
 
 # LDPlayer 창 활성화하기
 win = pygetwindow.getWindowsWithTitle('LDPlayer')[0]
@@ -31,27 +34,36 @@ pyautogui.move(830, 260)
 
 # 전체 상자 수 확인
 pyautogui.hotkey('alt', 'printscreen')
-ImageGrab.grabclipboard().crop((700, 200, 787, 222)).save('gift.png', 'png')
+ImageGrab.grabclipboard().save('check.png', 'png')
+ImageGrab.grabclipboard().crop((550, 160, 630, 182)).save('gift.png', 'png')
 gift_gray = cv2.imread('gift.png', cv2.IMREAD_GRAYSCALE)
 gift_gray = cv2.threshold(gift_gray, 127, 255, cv2.THRESH_BINARY_INV)[1]
 gift_text = pytesseract.image_to_string(gift_gray, lang='eng', config=tesseract_config)
 gift_text = int(gift_text[6:len(gift_text)])
-print('전체 상자 수:', gift_text)
 
-while gift_text + error_count != 0:
+if gift_text > 0:
+    print('전체 상자 수:', gift_text)
+else:
+    print('상자가 없음')
+    sys.exit()
+
+while True:
+    if rarity_text == 'Be' or nickname_text == 'Be':
+        break
     i += 1
     # 활성화 창 클립보드로 스샷 찍고 가공 후 저장
     pyautogui.hotkey('alt', 'printscreen')
     im1 = ImageGrab.grabclipboard()
-    im1.crop((480, 300, 1130, 400)).save(('./data/' + str(tmpname) + '.png'), 'png')
-    im1.crop((492, 300, 900, 330)).save('rarity.png', 'png')
-    im1.crop((640, 330, 900, 360)).save('nickname.png', 'png')
+    im1.crop((380, 240, 680, 320)).save(('./data/' + str(i) + '.png'), 'png')
+    im1.crop((385, 242, 700, 266)).save('rarity.png', 'png')
+    im1.crop((515, 268, 700, 288)).save('nickname.png', 'png')
 
     # 전처리 & OCR
     rarity_gray = cv2.imread('rarity.png', cv2.IMREAD_GRAYSCALE)
     rarity_gray = cv2.threshold(rarity_gray, 120, 255, cv2.THRESH_BINARY_INV)[1]
     rarity_text = pytesseract.image_to_string(rarity_gray, lang='eng', config=tesseract_config)
     rarity_text = rarity_text.split()[0]
+
     nickname_gray = cv2.imread('nickname.png', cv2.IMREAD_GRAYSCALE)
     nickname_gray = cv2.threshold(nickname_gray, 127, 255, cv2.THRESH_BINARY_INV)[1]
     nickname_text = pytesseract.image_to_string(nickname_gray, lang='eng', config=tesseract_config).strip('\n')
@@ -81,14 +93,20 @@ while gift_text + error_count != 0:
         time.sleep(1)
         pyautogui.click()
         time.sleep(1)
-        tmpname += 1
-        if error_count > 0:
-            error_count -= 1
-        else:
-            gift_text -= 1
     else:
-        error_count += 1
         time.sleep(2)
+
+    pyautogui.hotkey('alt', 'printscreen')
+    ImageGrab.grabclipboard().crop((550, 300, 730, 500)).save('check.png', 'png')
+    check_gray = cv2.imread('check.png', cv2.IMREAD_GRAYSCALE)
+    check_gray = cv2.threshold(check_gray, 127, 255, cv2.THRESH_BINARY_INV)[1]
+    check_text = pytesseract.image_to_string(check_gray, lang='eng', config=tesseract_config).strip('\n')
+
+    if check_text == 'No Guild Gifts':
+        print('상자가 더이상 없음')
+        break
+    else:
+        pass
 
 print('전체 실행 횟수:', i )
 
