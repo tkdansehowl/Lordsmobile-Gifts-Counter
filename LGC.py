@@ -48,15 +48,30 @@ else:
     sys.exit()
 
 while True:
-    if rarity_text == 'Be' or nickname_text == 'Be':
+    if rarity_text == 'Be' and nickname_text == 'Be':
         break
-    i += 1
+
+    time.sleep(0.8)
+
+    # 상자 남았는 지 체크
+    pyautogui.hotkey('alt', 'printscreen')
+    ImageGrab.grabclipboard().crop((550, 300, 730, 500)).save('check.png', 'png')
+    check_gray = cv2.imread('check.png', cv2.IMREAD_GRAYSCALE)
+    check_gray = cv2.threshold(check_gray, 127, 255, cv2.THRESH_BINARY_INV)[1]
+    check_text = pytesseract.image_to_string(check_gray, lang='eng', config=tesseract_config).strip('\n')
+
+    if check_text == 'No Guild Gifts':
+        print('더이상 상자가 없음')
+        break
+    else:
+        i += 1
+
     # 활성화 창 클립보드로 스샷 찍고 가공 후 저장
     pyautogui.hotkey('alt', 'printscreen')
     im1 = ImageGrab.grabclipboard()
     im1.crop((380, 240, 680, 320)).save(('./data/' + str(i) + '.png'), 'png')
     im1.crop((385, 242, 700, 266)).save('rarity.png', 'png')
-    im1.crop((515, 268, 700, 288)).save('nickname.png', 'png')
+    im1.crop((515, 268, 700, 293)).save('nickname.png', 'png')
 
     # 전처리 & OCR
     rarity_gray = cv2.imread('rarity.png', cv2.IMREAD_GRAYSCALE)
@@ -90,23 +105,11 @@ while True:
         else:
             df.loc[nickname_text, 'Legendary'] += 1
         pyautogui.click()
-        time.sleep(1)
+        time.sleep(0.7)
         pyautogui.click()
-        time.sleep(1)
     else:
         time.sleep(2)
 
-    pyautogui.hotkey('alt', 'printscreen')
-    ImageGrab.grabclipboard().crop((550, 300, 730, 500)).save('check.png', 'png')
-    check_gray = cv2.imread('check.png', cv2.IMREAD_GRAYSCALE)
-    check_gray = cv2.threshold(check_gray, 127, 255, cv2.THRESH_BINARY_INV)[1]
-    check_text = pytesseract.image_to_string(check_gray, lang='eng', config=tesseract_config).strip('\n')
-
-    if check_text == 'No Guild Gifts':
-        print('상자가 더이상 없음')
-        break
-    else:
-        pass
 
 print('전체 실행 횟수:', i )
 
